@@ -1,37 +1,36 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:'Arial Black',Arial,sans-serif;color:#fff;overflow:hidden}
-body{background:radial-gradient(ellipse at 50% 20%,#5fb6ff 0%,#2d6fb8 40%,#123a6b 75%,#0a1f3d 100%);display:flex;flex-direction:column;align-items:center;justify-content:center}
-.sun{position:fixed;top:-20vh;left:50%;width:120vw;height:60vh;transform:translateX(-50%);background:radial-gradient(#fff7,#fff0 60%)}
-.hill{position:fixed;bottom:-30vh;left:-20vw;width:140vw;height:60vh;border-radius:50%;background:radial-gradient(ellipse at 50% 20%,#7fd04a,#3f8f22 60%,#2a6416)}
-.logo{position:relative;text-align:center;margin-top:-8vh}
-.logo img{width:120px;height:120px;border-radius:28px;border:5px solid #ffd54a;background:#fff3c4;box-shadow:0 6px 0 #a36d00,0 12px 30px #0008}
-h1{margin:14px 0 0;font-size:38px;letter-spacing:1px;color:#ffd84a;text-shadow:0 3px 0 #7a3c00,2px 0 #7a3c00,-2px 0 #7a3c00,0 -2px #7a3c00,0 8px 16px #0008}
-.card{position:relative;margin-top:26px;width:min(330px,86vw);padding:16px;border:6px solid #80bfdf;border-bottom-width:10px;border-bottom-color:#4586ad;border-radius:26px;background:#68a9d0;box-shadow:0 5px 0 #173849,0 14px 40px #0009;text-align:center}
-.sv{display:flex;align-items:center;justify-content:space-between;background:#f6f0dc;border-radius:16px;border-bottom:4px solid #cfc6a6;padding:12px 14px;color:#6b3a1c;font-size:17px}
-.st{display:flex;align-items:center;gap:7px;font-size:15px}
-.dot{width:13px;height:13px;border-radius:50%;background:#aaa;box-shadow:0 0 0 3px #0001}
-.on .dot{background:#3fd14a;box-shadow:0 0 10px #3fd14a}.on .tx{color:#1b8a3a}
-.off .dot{background:#e8453c;box-shadow:0 0 10px #e8453c}.off .tx{color:#c62828}
-.chk .dot{animation:pi 1s infinite}@keyframes pi{50%{opacity:.3}}
-button{margin-top:14px;width:100%;padding:14px;border:0;border-radius:18px;font:24px 'Arial Black',Arial;color:#fff;cursor:pointer;transition:transform .1s}
-button:active{transform:translateY(3px)}
-.bon{background:linear-gradient(#8fe04a,#52b522);box-shadow:0 6px 0 #2f7a12;text-shadow:0 2px #2a5e10}
-.boff{background:linear-gradient(#9aa5b1,#6b7684);box-shadow:0 6px 0 #3e4752;text-shadow:0 2px #333}
-.msg{margin-top:12px;font:13px Arial,sans-serif;color:#eaf5ff;min-height:18px}
-</style></head><body><div class="sun"></div><div class="hill"></div>
-<div class="logo"><img src="avatar.png" alt=""><h1>Smash World GO</h1></div>
-<div class="card"><div class="sv chk" id="sv"><span>Servidor</span><span class="st"><span class="dot"></span><span class="tx" id="tx">Verificando...</span></span></div>
-<button id="bt" class="boff" onclick="jogar()">Aguarde...</button><div class="msg" id="msg"></div></div>
+html,body{margin:0;height:100%;overflow:hidden;background:#0d1b2c;font-family:'Arial Black',Arial,sans-serif;color:#fff}
+.bg{position:fixed;inset:0;background:url(bg.jpg) center bottom/cover no-repeat}
+.ver{position:fixed;top:6px;right:8px;font:bold 11px Arial;text-shadow:0 1px 2px #000}
+.ui{position:fixed;left:0;right:0;bottom:4%;display:flex;flex-direction:column;align-items:center;gap:22px}
+.bar{display:flex;align-items:center;gap:12px;min-width:270px;max-width:88vw;padding:9px 16px;border-radius:14px;background:rgba(20,30,55,.88);border:3px solid #ffd25a;font-size:16px;text-shadow:0 2px 0 #000,1px 0 #000,-1px 0 #000}
+.st{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:14px}
+.dot{width:11px;height:11px;border-radius:50%;background:#bbb}
+.on .dot{background:#4fe05a;box-shadow:0 0 8px #4fe05a}.on .tx{color:#6ef27a}
+.off .dot{background:#ff5045;box-shadow:0 0 8px #ff5045}.off .tx{color:#ff7a70}
+.chk .dot{animation:p 1s infinite}@keyframes p{50%{opacity:.25}}
+.btn{min-width:190px;padding:14px 30px;border:0;background:none;border-image:url(btn.png) 30 45 fill / 30px 45px;font:22px 'Arial Black',Arial;color:#fff8de;text-shadow:0 2px #6a3a00,1.5px 0 #6a3a00,-1.5px 0 #6a3a00,0 -1.5px #6a3a00;transition:transform .1s,filter .2s}
+.btn:active{transform:scale(.95)}
+.btn.dis{filter:grayscale(1) brightness(.85)}
+.aviso{font:12px Arial,sans-serif;font-weight:bold;text-align:center;line-height:1.5;text-shadow:0 1px 2px #000,0 0 3px #000;padding:0 14px}
+.msg{min-height:16px;font:bold 13px Arial,sans-serif;text-shadow:0 1px 3px #000,0 0 4px #000;color:#ffe08a;text-align:center;padding:0 16px}
+</style></head><body><div class="bg"></div><div class="ver">v1.2.7</div>
+<div class="ui">
+ <div class="bar chk" id="sv"><span id="nm">Servidor</span><span class="st"><span class="dot"></span><span class="tx" id="tx">Verificando...</span></span></div>
+ <div class="msg" id="msg"></div>
+ <button class="btn dis" id="bt" onclick="jogar()">Iniciar jogo</button>
+ <div class="aviso">Evite jogos nocivos e piratas. Proteja-se e cuidado com golpes.<br>Jogue com moderação: organize seu tempo e tenha uma vida saudável.</div>
+</div>
 <script>
 var u='__URL__',on=false,host=(u.match(/^https?:\/\/([^\/:]+)/)||[])[1]||'';
-function set(ok){on=ok;var sv=document.getElementById('sv');sv.className='sv '+(ok?'on':'off');document.getElementById('tx').textContent=ok?'ONLINE':'OFFLINE';
- var b=document.getElementById('bt');b.className=ok?'bon':'boff';b.textContent=ok?'JOGAR':'Servidor offline';
- document.getElementById('msg').textContent=ok?'Tudo pronto! Toque em JOGAR.':'O servidor está desligado ou em manutenção. Verificando de novo sozinho...'}
+function set(ok){on=ok;document.getElementById('sv').className='bar '+(ok?'on':'off');document.getElementById('tx').textContent=ok?'ONLINE':'OFFLINE';
+ document.getElementById('bt').className='btn'+(ok?'':' dis');
+ document.getElementById('msg').textContent=ok?'':'Servidor em manutenção. Tentando de novo sozinho...'}
 function ws(cb){var d=false,w;function f(k){if(d)return;d=true;try{w.close()}catch(e){}cb(k)}try{w=new WebSocket('ws://'+host+':3020')}catch(e){return cb(false)}setTimeout(function(){f(false)},6000);w.onopen=function(){f(true)};w.onerror=function(){f(false)}}
 function site(cb){var d=false,i=new Image();setTimeout(function(){if(!d){d=true;cb(false)}},6000);i.onload=function(){if(!d){d=true;cb(true)}};i.onerror=function(){if(!d){d=true;cb(false)}};i.src=u.replace(/\/?$/,'/')+'favicon.ico?p='+Date.now()}
 function checar(){site(function(a){if(!a)return set(false);ws(function(b){set(b)})})}
-function jogar(){if(on)location.href=u;else checar()}
+function jogar(){if(on){document.getElementById('bt').textContent='Entrando...';location.href=u}else{checar()}}
 checar();setInterval(checar,5000);
 </script></body></html>
