@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Nome que aparece embaixo do icone -->
+    <string name="app_name">Smash World GO</string>
+    <!-- Endereco do jogo (troque pelo IP ou dominio da VPS) -->
+    <string name="game_url">http://SEU-IP-AQUI:8080/</string>
+</resources>
