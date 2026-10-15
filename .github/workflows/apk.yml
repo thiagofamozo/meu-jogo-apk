@@ -2,6 +2,8 @@ name: Gerar APK
 on:
   push:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,3 +24,10 @@ jobs:
         with:
           name: MeuJogo-APK
           path: MeuJogo.apk
+      - name: Publicar para baixar no celular
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: Smash World GO (versao ${{ github.run_number }})
+          make_latest: true
+          files: MeuJogo.apk
