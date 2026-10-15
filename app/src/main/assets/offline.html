@@ -1,0 +1,13 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html,body{margin:0;height:100%;background:linear-gradient(#1b3a5c,#0d1b2c);font-family:'Arial Black',Arial,sans-serif;color:#fff;display:flex;align-items:center;justify-content:center}
+.box{width:min(340px,86vw);position:relative;padding:50px 16px 18px;border:7px solid #80bfdf;border-bottom-width:11px;border-bottom-color:#4586ad;border-radius:30px;background:#68a9d0;box-shadow:0 5px 0 #173849,0 14px 40px #000a;text-align:center}
+.t{position:absolute;top:-30px;left:24px;right:24px;height:54px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:linear-gradient(#f58424,#ffa33e);box-shadow:0 6px 0 #0004;font-size:21px;text-shadow:0 2px #5a2c0c,1.5px 0 #5a2c0c,-1.5px 0 #5a2c0c}
+.i{font-size:54px}.b{background:#f6f0dc;border-radius:20px;border-bottom:5px solid #cfc6a6;padding:16px;color:#6b3a1c;font:16px Arial,sans-serif;line-height:1.4}
+button{margin-top:14px;min-width:190px;padding:12px 20px;border:0;border-radius:16px;background:linear-gradient(#8fe04a,#52b522);box-shadow:0 5px 0 #2f7a12;color:#fff;font:20px 'Arial Black',Arial;text-shadow:0 2px #2a5e10}
+small{display:block;margin-top:10px;font:13px Arial;color:#e6f2ff}
+</style></head><body><div class="box"><div class="t">Servidor offline</div><div class="i">🔧</div>
+<div class="b">O servidor do jogo está desligado ou em manutenção no momento.<br><br>Tente novamente em alguns minutos.</div>
+<button onclick="go()">Tentar de novo</button><small id="s">Tentando reconectar sozinho...</small></div>
+<script>var u=decodeURIComponent((location.search.match(/u=([^&]+)/)||[])[1]||'');function go(){if(u)location.href=u}var n=20;setInterval(function(){n--;document.getElementById('s').textContent='Tentando de novo em '+n+'s...';if(n<=0){go()}},1000)</script>
+</body></html>

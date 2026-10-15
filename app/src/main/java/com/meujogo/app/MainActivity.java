@@ -30,6 +30,7 @@ public class MainActivity extends Activity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
+        s.setAllowFileAccess(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
@@ -42,6 +43,7 @@ public class MainActivity extends Activity {
                 String u = req.getUrl().toString();
                 Uri h = Uri.parse(home);
                 // links de pagamento (Stripe, banco, WhatsApp) abrem fora do jogo
+                if (u.startsWith("file:")) return false;
                 if (req.getUrl().getHost() != null && !req.getUrl().getHost().equals(h.getHost())) {
                     try { startActivity(new Intent(Intent.ACTION_VIEW, req.getUrl())); } catch (Exception e) { }
                     return true;
@@ -51,11 +53,7 @@ public class MainActivity extends Activity {
             @Override
             public void onReceivedError(WebView v, WebResourceRequest req, WebResourceError err) {
                 if (req.isForMainFrame()) {
-                    new AlertDialog.Builder(MainActivity.this)
-                        .setTitle("Sem conexao")
-                        .setMessage("Nao foi possivel conectar ao servidor do jogo. Verifique sua internet.")
-                        .setPositiveButton("Tentar de novo", (d, w) -> web.loadUrl(home))
-                        .setCancelable(false).show();
+                    v.loadUrl("file:///android_asset/offline.html?u=" + Uri.encode(home));
                 }
             }
         });
