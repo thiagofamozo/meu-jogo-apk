@@ -14,6 +14,9 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.graphics.Color;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class MainActivity extends Activity {
     private WebView web;
@@ -25,6 +28,7 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         home = getString(R.string.game_url);
         web = new WebView(this);
+        web.setBackgroundColor(Color.parseColor("#0d1b2c"));
         setContentView(web);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -51,16 +55,39 @@ public class MainActivity extends Activity {
                 return false;
             }
             @Override
+            public void onReceivedError(WebView v, int code, String desc, String url) {
+                if (url != null && !url.startsWith("file:")) offline();
+            }
+            @Override
             public void onReceivedError(WebView v, WebResourceRequest req, WebResourceError err) {
                 if (req.isForMainFrame()) {
-                    v.loadUrl("file:///android_asset/offline.html?u=" + Uri.encode(home));
+                    offline();
                 }
             }
         });
         // window.open (pagamento) abre no navegador do celular
         web.getSettings().setSupportMultipleWindows(false);
-        if (b == null) web.loadUrl(home); else web.restoreState(b);
+        web.loadUrl("file:///android_asset/offline.html?carregando=1&u=" + Uri.encode(home));
+        abrirJogo();
         hideBars();
+    }
+
+    private void offline() {
+        runOnUiThread(() -> web.loadUrl("file:///android_asset/offline.html?u=" + Uri.encode(home)));
+    }
+
+    // confere se o servidor responde antes de abrir (evita a pagina branca de erro)
+    private void abrirJogo() {
+        new Thread(() -> {
+            boolean ok = false;
+            try {
+                HttpURLConnection c = (HttpURLConnection) new URL(home).openConnection();
+                c.setConnectTimeout(6000); c.setReadTimeout(6000); c.setRequestMethod("GET");
+                ok = c.getResponseCode() < 500; c.disconnect();
+            } catch (Exception e) { ok = false; }
+            final boolean fOk = ok;
+            runOnUiThread(() -> { if (fOk) web.loadUrl(home); else offline(); });
+        }).start();
     }
 
     private void hideBars() {
