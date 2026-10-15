@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
                 String u = req.getUrl().toString();
                 Uri h = Uri.parse(home);
                 // links de pagamento (Stripe, banco, WhatsApp) abrem fora do jogo
-                if (u.startsWith("file:") || u.startsWith("https://app.local")) return false;
+                if (u.startsWith("file:") || u.startsWith("data:")) return false;
                 if (req.getUrl().getHost() != null && !req.getUrl().getHost().equals(h.getHost())) {
                     try { startActivity(new Intent(Intent.ACTION_VIEW, req.getUrl())); } catch (Exception e) { }
                     return true;
@@ -56,7 +56,7 @@ public class MainActivity extends Activity {
             }
             @Override
             public void onReceivedError(WebView v, int code, String desc, String url) {
-                if (url != null && !url.startsWith("file:") && !url.startsWith("https://app.local")) offline();
+                if (url != null && !url.startsWith("file:") && !url.startsWith("data:")) offline();
             }
             @Override
             public void onReceivedError(WebView v, WebResourceRequest req, WebResourceError err) {
@@ -67,8 +67,7 @@ public class MainActivity extends Activity {
         });
         // window.open (pagamento) abre no navegador do celular
         web.getSettings().setSupportMultipleWindows(false);
-        tela("carregando");
-        abrirJogo();
+        tela("inicio");
         hideBars();
     }
 
@@ -80,11 +79,11 @@ public class MainActivity extends Activity {
             byte[] buf = new byte[4096]; int n; while ((n = in.read(buf)) > 0) bo.write(buf, 0, n); in.close();
             html = bo.toString("UTF-8").replace("__MODO__", modo).replace("__URL__", home);
         } catch (Exception e) { }
-        web.loadDataWithBaseURL("https://app.local/", html, "text/html", "utf-8", null);
+        web.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "utf-8", null);
     }
 
     private void offline() {
-        runOnUiThread(() -> tela("offline"));
+        runOnUiThread(() -> tela("inicio"));
     }
 
     // confere se o servidor responde antes de abrir (evita a pagina branca de erro)
