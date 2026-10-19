@@ -19,10 +19,18 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0d1b2c;font-family:'A
 .msg:empty{display:none}
 .msg.erro{border-color:#ff5045;color:#ffe3e0}
 .msg.erro::before{content:'⚠ ';color:#ffcc33}
+.carga{display:none;width:86vw;max-width:420px;text-align:center}
+.carga.on{display:block}
+.carga .tt{font:bold 15px Arial,sans-serif;color:#fff;margin-bottom:7px;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 0 4px #000}
+.trilho{position:relative;height:24px;border-radius:13px;background:rgba(10,14,28,.9);border:2px solid #ffd25a;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,.6)}
+.enche{height:100%;width:0;border-radius:11px;background:linear-gradient(#ffe98a,#ffb52e 55%,#e88a10);box-shadow:inset 0 2px 0 rgba(255,255,255,.55);transition:width .25s}
+.pc{position:absolute;inset:0;line-height:20px;font:bold 13px Arial,sans-serif;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000}
+.ocultar{display:none!important}
 </style></head><body><div class="bg"></div><div class="ver" id="ver">v2.0</div>
 <div class="ui">
  <div class="bar chk" id="sv"><span id="nm">Servidor</span><span class="st"><span class="dot"></span><span class="tx" id="tx">Verificando...</span></span></div>
  <div class="msg" id="msg"></div>
+ <div class="carga" id="cg"><div class="tt" id="cgt">Atualizando...</div><div class="trilho"><div class="enche" id="cgb"></div><div class="pc" id="cgp">0%</div></div></div>
  <button class="btn dis" id="bt" onclick="jogar()">Iniciar jogo</button>
  <div class="aviso">Evite jogos nocivos e piratas. Proteja-se e cuidado com golpes.<br>Jogue com moderação: organize seu tempo e tenha uma vida saudável.</div>
 </div>
@@ -41,10 +49,12 @@ function site(cb){var d=false,i=new Image();setTimeout(function(){if(!d){d=true;
 function checar(){site(function(a){if(!a)return set(false);ws(function(b){set(b)})})}
 var baixando=false;
 function mb(b){return (b/1048576).toFixed(b<10485760?1:0)+' MB'}
-function progresso(n,t,b,tb,pri){baixando=true;document.getElementById('msg').className='msg';var bt=document.getElementById('bt');bt.className='btn dis';
- var pc=tb>0?Math.floor(b*100/tb):Math.floor(n*100/Math.max(t,1));bt.textContent=(pri?'Baixando jogo ':'Atualizando ')+pc+'%';
- document.getElementById('msg').textContent=mb(b)+' de '+mb(tb)+' ('+n+'/'+t+' arquivos)'+(pri?' - só na 1ª vez':'')}
-function falhou(m){baixando=false;document.getElementById('msg').className='msg erro';var bt=document.getElementById('bt');bt.textContent='Iniciar jogo';bt.className='btn'+(on?'':' dis');document.getElementById('msg').textContent=m}
+function progresso(n,t,b,tb,pri){baixando=true;var mg=document.getElementById('msg');mg.className='msg';mg.textContent='';
+ document.getElementById('bt').classList.add('ocultar');document.getElementById('cg').className='carga on';
+ var pc=tb>0?Math.floor(b*100/tb):Math.floor(n*100/Math.max(t,1));if(n>=t)pc=100;
+ document.getElementById('cgb').style.width=pc+'%';document.getElementById('cgp').textContent=pc+'%';
+ document.getElementById('cgt').textContent=(pri?'Baixando o jogo... ':'Atualizando... ')+n+'/'+t+' arquivos'}
+function falhou(m){baixando=false;document.getElementById('cg').className='carga';document.getElementById('bt').classList.remove('ocultar');document.getElementById('msg').className='msg erro';var bt=document.getElementById('bt');bt.textContent='Iniciar jogo';bt.className='btn'+(on?'':' dis');document.getElementById('msg').textContent=m}
 function jogar(){if(baixando)return;if(on){var bt=document.getElementById('bt');bt.textContent='Verificando versão...';
  if(window.SmashApp&&SmashApp.atualizar){baixando=true;SmashApp.atualizar()}else{location.href=u}}else{checar()}}
 try{if(window.SmashApp)document.getElementById('ver').textContent='v'+SmashApp.versaoApp()}catch(e){}
