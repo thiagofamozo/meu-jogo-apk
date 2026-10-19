@@ -16,7 +16,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0d1b2c;font-family:'A
 .btn.dis{filter:grayscale(1) brightness(.85)}
 .aviso{font:12px Arial,sans-serif;font-weight:bold;text-align:center;line-height:1.5;text-shadow:0 1px 2px #000,0 0 3px #000;padding:0 14px}
 .msg{min-height:16px;font:bold 13px Arial,sans-serif;text-shadow:0 1px 3px #000,0 0 4px #000;color:#ffe08a;text-align:center;padding:0 16px}
-</style></head><body><div class="bg"></div><div class="ver">v1.2.7</div>
+</style></head><body><div class="bg"></div><div class="ver" id="ver">v2.0</div>
 <div class="ui">
  <div class="bar chk" id="sv"><span id="nm">Servidor</span><span class="st"><span class="dot"></span><span class="tx" id="tx">Verificando...</span></span></div>
  <div class="msg" id="msg"></div>
@@ -25,12 +25,20 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0d1b2c;font-family:'A
 </div>
 <script>
 var u='__URL__',on=false,host=(u.match(/^https?:\/\/([^\/:]+)/)||[])[1]||'';
-function set(ok){on=ok;document.getElementById('sv').className='bar '+(ok?'on':'off');document.getElementById('tx').textContent=ok?'ONLINE':'OFFLINE';
+function set(ok){on=ok;if(baixando){document.getElementById('sv').className='bar '+(ok?'on':'off');document.getElementById('tx').textContent=ok?'ONLINE':'OFFLINE';return}document.getElementById('sv').className='bar '+(ok?'on':'off');document.getElementById('tx').textContent=ok?'ONLINE':'OFFLINE';
  document.getElementById('bt').className='btn'+(ok?'':' dis');
  document.getElementById('msg').textContent=ok?'':'Servidor em manutenção. Tentando de novo sozinho...'}
 function ws(cb){var d=false,w;function f(k){if(d)return;d=true;try{w.close()}catch(e){}cb(k)}try{w=new WebSocket('ws://'+host+':3020')}catch(e){return cb(false)}setTimeout(function(){f(false)},6000);w.onopen=function(){f(true)};w.onerror=function(){f(false)}}
 function site(cb){var d=false,i=new Image();setTimeout(function(){if(!d){d=true;cb(false)}},6000);i.onload=function(){if(!d){d=true;cb(true)}};i.onerror=function(){if(!d){d=true;cb(false)}};i.src=u.replace(/\/?$/,'/')+'favicon.ico?p='+Date.now()}
 function checar(){site(function(a){if(!a)return set(false);ws(function(b){set(b)})})}
-function jogar(){if(on){document.getElementById('bt').textContent='Entrando...';location.href=u}else{checar()}}
+var baixando=false;
+function mb(b){return (b/1048576).toFixed(b<10485760?1:0)+' MB'}
+function progresso(n,t,b,tb,pri){baixando=true;var bt=document.getElementById('bt');bt.className='btn dis';
+ var pc=tb>0?Math.floor(b*100/tb):Math.floor(n*100/Math.max(t,1));bt.textContent=(pri?'Baixando jogo ':'Atualizando ')+pc+'%';
+ document.getElementById('msg').textContent=mb(b)+' de '+mb(tb)+' ('+n+'/'+t+' arquivos)'+(pri?' - só na 1ª vez':'')}
+function falhou(m){baixando=false;var bt=document.getElementById('bt');bt.textContent='Iniciar jogo';bt.className='btn'+(on?'':' dis');document.getElementById('msg').textContent=m}
+function jogar(){if(baixando)return;if(on){var bt=document.getElementById('bt');bt.textContent='Verificando versão...';
+ if(window.SmashApp&&SmashApp.atualizar){baixando=true;SmashApp.atualizar()}else{location.href=u}}else{checar()}}
+try{if(window.SmashApp)document.getElementById('ver').textContent='v'+SmashApp.versaoApp()}catch(e){}
 checar();setInterval(checar,5000);
 </script></body></html>

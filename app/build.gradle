@@ -1,4 +1,7 @@
 plugins { id 'com.android.application' }
+// Chave: se o GitHub tiver os segredos APK_KEYSTORE/APK_SENHA (chave oficial, para a Aptoide), usa ela.
+// Senao usa a chave de TESTE que fica no repositorio (so para testar no celular).
+def ksOficial = System.getenv('APK_KEYSTORE_ARQ')
 android {
     namespace 'com.meujogo.app'
     compileSdk 34
@@ -6,9 +9,20 @@ android {
         applicationId "com.meujogo.app"
         minSdk 21
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger() + 100)
+        versionName "2.0." + (System.getenv('GITHUB_RUN_NUMBER') ?: '0')
     }
-    buildTypes { release { minifyEnabled false; signingConfig signingConfigs.debug } }
+    signingConfigs {
+        assinatura {
+            if (ksOficial) {
+                storeFile file(ksOficial); storePassword System.getenv('APK_SENHA')
+                keyAlias 'smash'; keyPassword System.getenv('APK_SENHA')
+            } else {
+                storeFile file('teste.keystore'); storePassword 'teste123'
+                keyAlias 'teste'; keyPassword 'teste123'
+            }
+        }
+    }
+    buildTypes { release { minifyEnabled false; signingConfig signingConfigs.assinatura } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

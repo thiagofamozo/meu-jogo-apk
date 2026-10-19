@@ -16,18 +16,25 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
+      - name: Chave oficial (se existir)
+        env:
+          K: ${{ secrets.APK_KEYSTORE }}
+        run: |
+          if [ -n "$K" ]; then echo "$K" | base64 -d > $RUNNER_TEMP/smash.keystore; echo "APK_KEYSTORE_ARQ=$RUNNER_TEMP/smash.keystore" >> $GITHUB_ENV; fi
       - name: Montar APK
+        env:
+          APK_SENHA: ${{ secrets.APK_SENHA }}
         run: gradle :app:assembleRelease --no-daemon
       - name: Renomear
-        run: cp app/build/outputs/apk/release/*.apk MeuJogo.apk
+        run: cp app/build/outputs/apk/release/*.apk SmashWorldGO.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: MeuJogo-APK
-          path: MeuJogo.apk
+          name: SmashWorldGO-APK
+          path: SmashWorldGO.apk
       - name: Publicar para baixar no celular
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-${{ github.run_number }}
           name: Smash World GO (versao ${{ github.run_number }})
           make_latest: true
-          files: MeuJogo.apk
+          files: SmashWorldGO.apk
