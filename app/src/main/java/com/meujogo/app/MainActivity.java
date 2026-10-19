@@ -129,6 +129,7 @@ public class MainActivity extends Activity {
         hideBars();
         baixarFundo();
         configurarAnuncios();
+        web.postDelayed(relogioAd, 30000);
     }
 
     // imagem da tela inicial trocada pelo servidor: game\app_fundo.jpg
@@ -349,7 +350,7 @@ public class MainActivity extends Activity {
     /** chamado pela tela inicial (offline.html) */
     private class Ponte {
         @JavascriptInterface public void atualizar() { MainActivity.this.atualizar(); }
-        @JavascriptInterface public void entrar() { abrirJogo(); }
+        @JavascriptInterface public void entrar() { entrarNoJogo(); }
         @JavascriptInterface public boolean anuncioPronto() { if (!adCarregado) runOnUiThread(() -> carregarAnuncio()); return adLigado && adIniciado && adCarregado; }
         @JavascriptInterface public String anuncioMotivo() { return adMotivo; }
         @JavascriptInterface public void mostrarAnuncio(String id) { MainActivity.this.mostrarAnuncio(id); }
@@ -384,6 +385,11 @@ public class MainActivity extends Activity {
     private volatile boolean adLigado = false, adIniciado = false, adCarregado = false, adCarregando = false;
     private volatile String adGameId = "", adPlacement = "Rewarded_Android", adMotivo = "Carregando anúncio...";
     private volatile boolean adTeste = true;
+    // tela cheia automatico (intersticial)
+    private volatile String isPlacement = "Interstitial_Android";
+    private volatile int isAbrirCada = 0, isMinutos = 0;
+    private volatile boolean isCarregado = false, isCarregando = false, mostrandoAd = false, noJogo = false;
+    private volatile long ultimoAd = System.currentTimeMillis();
 
     private void configurarAnuncios() {
         new Thread(() -> {
@@ -397,10 +403,14 @@ public class MainActivity extends Activity {
                 adGameId = o.optString("gameId", "").trim();
                 String pl = o.optString("recompensa", "").trim();
                 if (!pl.isEmpty()) adPlacement = pl;
+                String ip = o.optString("intersticial", "").trim();
+                if (!ip.isEmpty()) isPlacement = ip;
+                isAbrirCada = Math.max(0, o.optInt("abrirCada", 0));
+                isMinutos = Math.max(0, o.optInt("minutosJogo", 0));
                 if (!adLigado) { adMotivo = "Anúncios desligados no momento."; return; }
                 if (adGameId.isEmpty()) { adMotivo = "Anúncios sem Game ID (painel)."; return; }
                 runOnUiThread(() -> UnityAds.initialize(getApplicationContext(), adGameId, adTeste, new IUnityAdsInitializationListener() {
-                    @Override public void onInitializationComplete() { adIniciado = true; carregarAnuncio(); }
+                    @Override public void onInitializationComplete() { adIniciado = true; carregarAnuncio(); carregarIntersticial(); }
                     @Override public void onInitializationFailed(UnityAds.UnityAdsInitializationError e, String m) { adMotivo = "Erro ao iniciar anúncios: " + m; }
                 }));
             } catch (Exception e) { adMotivo = "Sem conexão para carregar anúncios."; }
@@ -419,15 +429,59 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void carregarIntersticial() {
+        if (!adIniciado || isCarregando || isCarregado || (isAbrirCada == 0 && isMinutos == 0)) return;
+        isCarregando = true;
+        UnityAds.load(isPlacement, new IUnityAdsLoadListener() {
+            @Override public void onUnityAdsAdLoaded(String p) { isCarregando = false; isCarregado = true; }
+            @Override public void onUnityAdsFailedToLoad(String p, UnityAds.UnityAdsLoadError e, String m) {
+                isCarregando = false; isCarregado = false; web.postDelayed(() -> carregarIntersticial(), 60000);
+            }
+        });
+    }
+
+    /** mostra tela cheia se carregado; depois chama "depois" (pode ser null) */
+    private void mostrarIntersticial(final Runnable depois) {
+        runOnUiThread(() -> {
+            if (!adLigado || !adIniciado || !isCarregado || mostrandoAd) { if (depois != null) depois.run(); carregarIntersticial(); return; }
+            isCarregado = false; mostrandoAd = true;
+            UnityAds.show(MainActivity.this, isPlacement, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
+                void fim() { mostrandoAd = false; ultimoAd = System.currentTimeMillis(); hideBars(); carregarIntersticial(); if (depois != null) depois.run(); }
+                @Override public void onUnityAdsShowFailure(String p, UnityAds.UnityAdsShowError e, String m) { fim(); }
+                @Override public void onUnityAdsShowStart(String p) { }
+                @Override public void onUnityAdsShowClick(String p) { }
+                @Override public void onUnityAdsShowComplete(String p, UnityAds.UnityAdsShowCompletionState st) { fim(); }
+            });
+        });
+    }
+
+    // a cada X minutos jogando (configurado no painel)
+    private final Runnable relogioAd = new Runnable() {
+        @Override public void run() {
+            try {
+                if (noJogo && isMinutos > 0 && !mostrandoAd && System.currentTimeMillis() - ultimoAd >= isMinutos * 60000L) mostrarIntersticial(null);
+            } catch (Exception e) { }
+            web.postDelayed(this, 30000);
+        }
+    };
+
+    private void entrarNoJogo() {
+        int n = getSharedPreferences("app", MODE_PRIVATE).getInt("aberturas", 0) + 1;
+        getSharedPreferences("app", MODE_PRIVATE).edit().putInt("aberturas", n).apply();
+        Runnable abrir = () -> { noJogo = true; ultimoAd = System.currentTimeMillis(); abrirJogo(); };
+        if (isAbrirCada > 0 && n % isAbrirCada == 0) mostrarIntersticial(abrir); else runOnUiThread(abrir);
+    }
+
     private void mostrarAnuncio(final String id) {
         runOnUiThread(() -> {
             if (!adLigado || !adIniciado || !adCarregado) { fimAnuncio(id, false, adMotivo); carregarAnuncio(); return; }
-            adCarregado = false;
+            adCarregado = false; mostrandoAd = true;
             UnityAds.show(MainActivity.this, adPlacement, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
-                @Override public void onUnityAdsShowFailure(String p, UnityAds.UnityAdsShowError e, String m) { fimAnuncio(id, false, "Falha ao mostrar o anúncio. Tente de novo."); carregarAnuncio(); }
+                @Override public void onUnityAdsShowFailure(String p, UnityAds.UnityAdsShowError e, String m) { mostrandoAd = false; fimAnuncio(id, false, "Falha ao mostrar o anúncio. Tente de novo."); carregarAnuncio(); }
                 @Override public void onUnityAdsShowStart(String p) { }
                 @Override public void onUnityAdsShowClick(String p) { }
                 @Override public void onUnityAdsShowComplete(String p, UnityAds.UnityAdsShowCompletionState st) {
+                    mostrandoAd = false; ultimoAd = System.currentTimeMillis();
                     boolean ok = st == UnityAds.UnityAdsShowCompletionState.COMPLETED;
                     fimAnuncio(id, ok, ok ? "" : "Você pulou o anúncio. Assista até o fim para ganhar.");
                     hideBars(); carregarAnuncio();
@@ -450,7 +504,7 @@ public class MainActivity extends Activity {
         web.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "utf-8", null);
     }
 
-    private void offline() { runOnUiThread(() -> tela("inicio")); }
+    private void offline() { noJogo = false; runOnUiThread(() -> tela("inicio")); }
 
     private void hideBars() {
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
