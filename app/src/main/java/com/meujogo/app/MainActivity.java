@@ -377,14 +377,24 @@ public class MainActivity extends Activity {
     private void abrirPagamento(String url) {
         if (url == null || !(url.startsWith("https://"))) return;
         fecharPagamento();
+        final float dp = getResources().getDisplayMetrics().density;
+        String host = ""; try { host = Uri.parse(url).getHost(); if (host != null && host.startsWith("www.")) host = host.substring(4); } catch (Exception e) { }
         Dialog d = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
         LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setBackgroundColor(Color.WHITE);
+        // barra de cima (verde, igual a do jogo)
         LinearLayout bar = new LinearLayout(this); bar.setOrientation(LinearLayout.HORIZONTAL); bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setBackgroundColor(Color.rgb(25, 92, 82)); int p = (int) (8 * getResources().getDisplayMetrics().density); bar.setPadding(p, p, p, p);
-        Button volta = new Button(this); volta.setText("\u2190 Voltar ao jogo"); volta.setAllCaps(false);
+        android.graphics.drawable.GradientDrawable gv = new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Color.rgb(55, 139, 121), Color.rgb(25, 92, 82)});
+        bar.setBackground(gv); bar.setPadding((int) (10 * dp), (int) (8 * dp), (int) (10 * dp), (int) (8 * dp));
+        TextView volta = new TextView(this); volta.setText("\u2190 Voltar ao jogo"); volta.setTextColor(Color.rgb(73, 61, 36)); volta.setTextSize(14); volta.setTypeface(null, android.graphics.Typeface.BOLD);
+        android.graphics.drawable.GradientDrawable pill = new android.graphics.drawable.GradientDrawable(); pill.setColor(Color.rgb(246, 237, 206)); pill.setCornerRadius(20 * dp); pill.setStroke((int) (2 * dp), Color.rgb(215, 188, 112));
+        volta.setBackground(pill); volta.setPadding((int) (14 * dp), (int) (7 * dp), (int) (14 * dp), (int) (7 * dp));
         volta.setOnClickListener(v -> fecharPagamento());
-        TextView tt = new TextView(this); tt.setText("\uD83D\uDD12 Pagamento seguro"); tt.setTextColor(Color.rgb(255, 248, 223)); tt.setTextSize(16); tt.setGravity(Gravity.CENTER);
-        bar.addView(volta); bar.addView(tt, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        TextView tt = new TextView(this); tt.setText("\uD83D\uDD12 Pagamento seguro" + (host != null && host.length() > 0 ? " \u2022 " + host : "")); tt.setTextColor(Color.rgb(255, 248, 223)); tt.setTextSize(14); tt.setTypeface(null, android.graphics.Typeface.BOLD); tt.setGravity(Gravity.CENTER);
+        TextView fora = new TextView(this); fora.setText("\u2197"); fora.setTextColor(Color.rgb(255, 248, 223)); fora.setTextSize(20); fora.setPadding((int) (10 * dp), 0, (int) (4 * dp), 0);
+        fora.setOnClickListener(v -> { try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); } catch (Exception e) { } });
+        bar.addView(volta); bar.addView(tt, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)); bar.addView(fora);
+        View linha = new View(this); linha.setBackgroundColor(Color.rgb(170, 144, 91));
+        // pagina do pagamento
         WebView w = new WebView(this);
         WebSettings ws = w.getSettings(); ws.setJavaScriptEnabled(true); ws.setDomStorageEnabled(true);
         w.setWebChromeClient(new WebChromeClient());
@@ -392,12 +402,17 @@ public class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest req) {
                 String s2 = req.getUrl().toString();
                 if (s2.startsWith("http://") || s2.startsWith("https://")) return false; // fica na tela de pagamento
-                try { startActivity(new Intent(Intent.ACTION_VIEW, req.getUrl())); } catch (Exception e) { } // app do banco, pix etc.
+                try { startActivity(new Intent(Intent.ACTION_VIEW, req.getUrl())); } catch (Exception e) { } // app do banco etc.
                 return true;
             }
         });
+        // barra de baixo (bege)
+        TextView rod = new TextView(this); rod.setText("Depois de pagar, esta tela fecha sozinha e o pacote chega no seu Correio. Se a p\u00e1gina n\u00e3o carregar, toque em \u2197.");
+        rod.setTextColor(Color.rgb(107, 88, 58)); rod.setTextSize(12); rod.setGravity(Gravity.CENTER); rod.setBackgroundColor(Color.rgb(239, 229, 207)); rod.setPadding((int) (10 * dp), (int) (7 * dp), (int) (10 * dp), (int) (7 * dp));
         box.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        box.addView(linha, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (3 * dp)));
         box.addView(w, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        box.addView(rod, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         d.setContentView(box);
         d.setOnCancelListener(x -> fecharPagamento());
         w.loadUrl(url);
