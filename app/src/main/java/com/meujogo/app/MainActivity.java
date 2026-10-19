@@ -128,8 +128,26 @@ public class MainActivity extends Activity {
         tela("inicio");
         hideBars();
         baixarFundo();
+        baixarVersao();
         configurarAnuncios();
         web.postDelayed(relogioAd, 30000);
+    }
+
+    private void baixarVersao() {
+        new Thread(() -> {
+            try {
+                HttpURLConnection c = (HttpURLConnection) new URL(home + "versao_jogo.txt?t=" + System.currentTimeMillis()).openConnection();
+                c.setConnectTimeout(6000); c.setReadTimeout(8000);
+                if (c.getResponseCode() == 200) {
+                    String v = lerTexto(c.getInputStream()).trim().replaceAll("^[vV]", "");
+                    if (!v.isEmpty() && v.length() <= 20) {
+                        getSharedPreferences("app", MODE_PRIVATE).edit().putString("versao_jogo", v).apply();
+                        js("try{document.getElementById('ver').textContent='v'+" + q(v) + "}catch(e){}");
+                    }
+                }
+                c.disconnect();
+            } catch (Exception e) { }
+        }).start();
     }
 
     // imagem da tela inicial trocada pelo servidor: game\app_fundo.jpg
@@ -355,8 +373,9 @@ public class MainActivity extends Activity {
         @JavascriptInterface public String anuncioMotivo() { return adMotivo; }
         @JavascriptInterface public void mostrarAnuncio(String id) { MainActivity.this.mostrarAnuncio(id); }
         @JavascriptInterface public boolean anuncioTeste() { return adTeste; }
+        // versao mostrada na tela: vem do servidor (game\\versao_jogo.txt); padrao 1.2.7
         @JavascriptInterface public String versaoApp() {
-            try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { return ""; }
+            return getSharedPreferences("app", MODE_PRIVATE).getString("versao_jogo", "1.2.7");
         }
         @JavascriptInterface public boolean temInternet() {
             try {
