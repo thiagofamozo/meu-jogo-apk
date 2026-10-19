@@ -2,6 +2,12 @@ package com.meujogo.app;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
+import android.view.Gravity;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -366,7 +372,44 @@ public class MainActivity extends Activity {
     }
 
     /** chamado pela tela inicial (offline.html) */
+    // ---- Pagamento (cartao Asaas/Stripe) numa tela DENTRO do app, por cima do jogo ----
+    private Dialog pagDlg = null;
+    private void abrirPagamento(String url) {
+        if (url == null || !(url.startsWith("https://"))) return;
+        fecharPagamento();
+        Dialog d = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setBackgroundColor(Color.WHITE);
+        LinearLayout bar = new LinearLayout(this); bar.setOrientation(LinearLayout.HORIZONTAL); bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setBackgroundColor(Color.rgb(25, 92, 82)); int p = (int) (8 * getResources().getDisplayMetrics().density); bar.setPadding(p, p, p, p);
+        Button volta = new Button(this); volta.setText("\u2190 Voltar ao jogo"); volta.setAllCaps(false);
+        volta.setOnClickListener(v -> fecharPagamento());
+        TextView tt = new TextView(this); tt.setText("\uD83D\uDD12 Pagamento seguro"); tt.setTextColor(Color.rgb(255, 248, 223)); tt.setTextSize(16); tt.setGravity(Gravity.CENTER);
+        bar.addView(volta); bar.addView(tt, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        WebView w = new WebView(this);
+        WebSettings ws = w.getSettings(); ws.setJavaScriptEnabled(true); ws.setDomStorageEnabled(true);
+        w.setWebChromeClient(new WebChromeClient());
+        w.setWebViewClient(new WebViewClient() {
+            @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest req) {
+                String s2 = req.getUrl().toString();
+                if (s2.startsWith("http://") || s2.startsWith("https://")) return false; // fica na tela de pagamento
+                try { startActivity(new Intent(Intent.ACTION_VIEW, req.getUrl())); } catch (Exception e) { } // app do banco, pix etc.
+                return true;
+            }
+        });
+        box.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        box.addView(w, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        d.setContentView(box);
+        d.setOnCancelListener(x -> fecharPagamento());
+        w.loadUrl(url);
+        pagDlg = d; d.show();
+    }
+    private void fecharPagamento() {
+        if (pagDlg != null) { try { pagDlg.dismiss(); } catch (Exception e) { } pagDlg = null; }
+    }
+
     private class Ponte {
+        @JavascriptInterface public void abrirPagamento(String url) { runOnUiThread(() -> MainActivity.this.abrirPagamento(url)); }
+        @JavascriptInterface public void fecharPagamento() { runOnUiThread(() -> MainActivity.this.fecharPagamento()); }
         @JavascriptInterface public void atualizar() { MainActivity.this.atualizar(); }
         @JavascriptInterface public void entrar() { entrarNoJogo(); }
         @JavascriptInterface public boolean anuncioPronto() { if (!adCarregado) runOnUiThread(() -> carregarAnuncio()); return adLigado && adIniciado && adCarregado; }
