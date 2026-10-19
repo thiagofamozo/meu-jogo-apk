@@ -428,21 +428,22 @@ public class MainActivity extends Activity {
                 isMinutos = Math.max(0, o.optInt("minutosJogo", 0));
                 if (!adLigado) { adMotivo = "Anúncios desligados no momento."; return; }
                 if (adGameId.isEmpty()) { adMotivo = "Anúncios sem Game ID (painel)."; return; }
+                adMotivo = "Iniciando anúncios... [gameId=" + adGameId + "]";
                 runOnUiThread(() -> UnityAds.initialize(getApplicationContext(), adGameId, adTeste, new IUnityAdsInitializationListener() {
                     @Override public void onInitializationComplete() { adIniciado = true; carregarAnuncio(); carregarIntersticial(); }
-                    @Override public void onInitializationFailed(UnityAds.UnityAdsInitializationError e, String m) { adMotivo = "Erro ao iniciar anúncios: " + m; }
+                    @Override public void onInitializationFailed(UnityAds.UnityAdsInitializationError e, String m) { adMotivo = "Erro ao iniciar anúncios [Unity: " + e + " - " + m + " | gameId=" + adGameId + "]"; }
                 }));
-            } catch (Exception e) { adMotivo = "Sem conexão para carregar anúncios."; }
+            } catch (Exception e) { adMotivo = "Sem conexão para carregar anúncios [" + e + "]"; }
         }).start();
     }
 
     private void carregarAnuncio() {
         if (!adIniciado || adCarregando || adCarregado) return;
-        adCarregando = true; adMotivo = "Carregando anúncio, tente em alguns segundos.";
+        adCarregando = true; adMotivo = "Carregando anúncio, tente em alguns segundos. [gameId=" + adGameId + " placement=" + adPlacement + "]";
         UnityAds.load(adPlacement, new IUnityAdsLoadListener() {
             @Override public void onUnityAdsAdLoaded(String p) { adCarregando = false; adCarregado = true; adMotivo = ""; }
             @Override public void onUnityAdsFailedToLoad(String p, UnityAds.UnityAdsLoadError e, String m) {
-                adCarregando = false; adCarregado = false; adMotivo = "Nenhum anúncio disponível agora. Tente mais tarde.";
+                adCarregando = false; adCarregado = false; adMotivo = "Nenhum anúncio disponível agora. Tente mais tarde. [Unity: " + e + " - " + m + " | placement=" + adPlacement + " gameId=" + adGameId + (adTeste ? " TESTE" : " REAL") + "]";
                 web.postDelayed(() -> carregarAnuncio(), 30000);
             }
         });
