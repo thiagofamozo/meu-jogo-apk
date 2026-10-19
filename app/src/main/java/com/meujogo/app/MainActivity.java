@@ -262,7 +262,7 @@ public class MainActivity extends Activity {
                 for (String k : new ArrayList<>(locais.keySet())) {
                     if (!novos.containsKey(k)) { locais.remove(k); new File(pasta, k).delete(); }
                 }
-                if (baixar.isEmpty()) { salvarManifestoLocal(); abrirJogo(); return; }
+                if (baixar.isEmpty()) { salvarManifestoLocal(); js("pronto()"); return; }
 
                 final boolean primeira = locais.isEmpty();
                 final long totalB = bytesTotal;
@@ -288,7 +288,7 @@ public class MainActivity extends Activity {
                     js("falhou(" + q("Faltaram " + erros.get() + " arquivos. Toque em Iniciar jogo para continuar o download.") + ")");
                     return;
                 }
-                abrirJogo();
+                js("pronto()");
             } catch (Exception e) {
                 js("falhou(" + q("Erro ao atualizar: " + e.getMessage()) + ")");
             } finally {
@@ -342,6 +342,7 @@ public class MainActivity extends Activity {
     /** chamado pela tela inicial (offline.html) */
     private class Ponte {
         @JavascriptInterface public void atualizar() { MainActivity.this.atualizar(); }
+        @JavascriptInterface public void entrar() { abrirJogo(); }
         @JavascriptInterface public String versaoApp() {
             try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { return ""; }
         }
