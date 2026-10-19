@@ -65,5 +65,8 @@ function falhou(m){baixando=false;setTimeout(function(){set(on);document.getElem
 function jogar(){if(baixando)return;if(!pronto_){if(siteOk)comecar();else checar();return}if(on){document.getElementById('bt').textContent='Entrando...';if(window.SmashApp&&SmashApp.entrar)SmashApp.entrar();else location.href=u}else checar()}
 try{if(window.SmashApp)document.getElementById('ver').textContent='v'+SmashApp.versaoApp()}catch(e){}
 try{if(window.SmashApp&&SmashApp.fundoLocal){var fl=SmashApp.fundoLocal();if(fl)fundo(fl)}}catch(e){}
+var vt=0;document.getElementById('ver').onclick=function(){if(++vt<5)return;vt=0;var mg=document.getElementById('msg');
+ if(!window.SmashApp||!SmashApp.anuncioPronto()){mg.className='msg erro';mg.textContent='Teste de anúncio: '+(window.SmashApp?SmashApp.anuncioMotivo():'fora do app');return}
+ window._smashAdFim=function(id,ok,m){mg.className='msg'+(ok?'':' erro');mg.textContent=ok?'✅ Teste OK: anúncio assistido até o fim!':'Teste de anúncio: '+m};SmashApp.mostrarAnuncio('teste')};
 checar();setInterval(checar,5000);
 </script></body></html>

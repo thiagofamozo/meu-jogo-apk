@@ -18,6 +18,12 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.unity3d.ads.IUnityAdsInitializationListener;
+import com.unity3d.ads.IUnityAdsLoadListener;
+import com.unity3d.ads.IUnityAdsShowListener;
+import com.unity3d.ads.UnityAds;
+import com.unity3d.ads.UnityAdsShowOptions;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -122,6 +128,7 @@ public class MainActivity extends Activity {
         tela("inicio");
         hideBars();
         baixarFundo();
+        configurarAnuncios();
     }
 
     // imagem da tela inicial trocada pelo servidor: game\app_fundo.jpg
@@ -343,6 +350,10 @@ public class MainActivity extends Activity {
     private class Ponte {
         @JavascriptInterface public void atualizar() { MainActivity.this.atualizar(); }
         @JavascriptInterface public void entrar() { abrirJogo(); }
+        @JavascriptInterface public boolean anuncioPronto() { if (!adCarregado) runOnUiThread(() -> carregarAnuncio()); return adLigado && adIniciado && adCarregado; }
+        @JavascriptInterface public String anuncioMotivo() { return adMotivo; }
+        @JavascriptInterface public void mostrarAnuncio(String id) { MainActivity.this.mostrarAnuncio(id); }
+        @JavascriptInterface public boolean anuncioTeste() { return adTeste; }
         @JavascriptInterface public String versaoApp() {
             try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { return ""; }
         }
@@ -366,6 +377,67 @@ public class MainActivity extends Activity {
         File[] l = f.listFiles();
         if (l != null) for (File x : l) apagar(x);
         f.delete();
+    }
+
+
+    // ---------- Anuncios Unity (configurados no painel: game\anuncios.json) ----------
+    private volatile boolean adLigado = false, adIniciado = false, adCarregado = false, adCarregando = false;
+    private volatile String adGameId = "", adPlacement = "Rewarded_Android", adMotivo = "Carregando anúncio...";
+    private volatile boolean adTeste = true;
+
+    private void configurarAnuncios() {
+        new Thread(() -> {
+            try {
+                HttpURLConnection c = (HttpURLConnection) new URL(home + "anuncios.json?t=" + System.currentTimeMillis()).openConnection();
+                c.setConnectTimeout(8000); c.setReadTimeout(10000);
+                if (c.getResponseCode() != 200) { adMotivo = "Anúncios não configurados no painel."; c.disconnect(); return; }
+                JSONObject o = new JSONObject(lerTexto(c.getInputStream())); c.disconnect();
+                adLigado = o.optBoolean("ligado", false);
+                adTeste = o.optBoolean("teste", true);
+                adGameId = o.optString("gameId", "").trim();
+                String pl = o.optString("recompensa", "").trim();
+                if (!pl.isEmpty()) adPlacement = pl;
+                if (!adLigado) { adMotivo = "Anúncios desligados no momento."; return; }
+                if (adGameId.isEmpty()) { adMotivo = "Anúncios sem Game ID (painel)."; return; }
+                runOnUiThread(() -> UnityAds.initialize(getApplicationContext(), adGameId, adTeste, new IUnityAdsInitializationListener() {
+                    @Override public void onInitializationComplete() { adIniciado = true; carregarAnuncio(); }
+                    @Override public void onInitializationFailed(UnityAds.UnityAdsInitializationError e, String m) { adMotivo = "Erro ao iniciar anúncios: " + m; }
+                }));
+            } catch (Exception e) { adMotivo = "Sem conexão para carregar anúncios."; }
+        }).start();
+    }
+
+    private void carregarAnuncio() {
+        if (!adIniciado || adCarregando || adCarregado) return;
+        adCarregando = true; adMotivo = "Carregando anúncio, tente em alguns segundos.";
+        UnityAds.load(adPlacement, new IUnityAdsLoadListener() {
+            @Override public void onUnityAdsAdLoaded(String p) { adCarregando = false; adCarregado = true; adMotivo = ""; }
+            @Override public void onUnityAdsFailedToLoad(String p, UnityAds.UnityAdsLoadError e, String m) {
+                adCarregando = false; adCarregado = false; adMotivo = "Nenhum anúncio disponível agora. Tente mais tarde.";
+                web.postDelayed(() -> carregarAnuncio(), 30000);
+            }
+        });
+    }
+
+    private void mostrarAnuncio(final String id) {
+        runOnUiThread(() -> {
+            if (!adLigado || !adIniciado || !adCarregado) { fimAnuncio(id, false, adMotivo); carregarAnuncio(); return; }
+            adCarregado = false;
+            UnityAds.show(MainActivity.this, adPlacement, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
+                @Override public void onUnityAdsShowFailure(String p, UnityAds.UnityAdsShowError e, String m) { fimAnuncio(id, false, "Falha ao mostrar o anúncio. Tente de novo."); carregarAnuncio(); }
+                @Override public void onUnityAdsShowStart(String p) { }
+                @Override public void onUnityAdsShowClick(String p) { }
+                @Override public void onUnityAdsShowComplete(String p, UnityAds.UnityAdsShowCompletionState st) {
+                    boolean ok = st == UnityAds.UnityAdsShowCompletionState.COMPLETED;
+                    fimAnuncio(id, ok, ok ? "" : "Você pulou o anúncio. Assista até o fim para ganhar.");
+                    hideBars(); carregarAnuncio();
+                }
+            });
+        });
+    }
+
+    private void fimAnuncio(String id, boolean ok, String msg) {
+        js("window._smashAdFim&&window._smashAdFim(" + q(id) + "," + ok + "," + q(msg) + ")");
     }
 
     // ---------- telas ----------

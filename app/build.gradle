@@ -26,3 +26,6 @@ android {
     buildTypes { release { minifyEnabled false; signingConfig signingConfigs.assinatura } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
+dependencies {
+    implementation 'com.unity3d.ads:unity-ads:4.12.0'
+}
