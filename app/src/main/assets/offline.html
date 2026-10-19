@@ -25,9 +25,14 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0d1b2c;font-family:'A
 </div>
 <script>
 var u='__URL__',on=false,host=(u.match(/^https?:\/\/([^\/:]+)/)||[])[1]||'';
-function set(ok){on=ok;if(baixando){document.getElementById('sv').className='bar '+(ok?'on':'off');document.getElementById('tx').textContent=ok?'ONLINE':'OFFLINE';return}document.getElementById('sv').className='bar '+(ok?'on':'off');document.getElementById('tx').textContent=ok?'ONLINE':'OFFLINE';
+function net(){try{if(window.SmashApp&&SmashApp.temInternet)return SmashApp.temInternet()}catch(e){}return navigator.onLine!==false}
+function set(ok){on=ok;var semNet=!ok&&!net();
+ document.getElementById('sv').className='bar '+(ok?'on':'off');
+ document.getElementById('tx').textContent=ok?'ONLINE':(semNet?'SEM INTERNET':'OFFLINE');
+ if(baixando)return;
  document.getElementById('bt').className='btn'+(ok?'':' dis');
- document.getElementById('msg').textContent=ok?'':'Servidor em manutenção. Tentando de novo sozinho...'}
+ document.getElementById('msg').textContent=ok?'':(semNet?'Sem conexão com a internet. Verifique seu Wi-Fi ou dados móveis e tente novamente.':'Servidor em manutenção. Tente novamente mais tarde.')}
+function fundo(f){try{document.querySelector('.bg').style.backgroundImage='url("'+f+'"),url(bg.jpg)'}catch(e){}}
 function ws(cb){var d=false,w;function f(k){if(d)return;d=true;try{w.close()}catch(e){}cb(k)}try{w=new WebSocket('ws://'+host+':3020')}catch(e){return cb(false)}setTimeout(function(){f(false)},6000);w.onopen=function(){f(true)};w.onerror=function(){f(false)}}
 function site(cb){var d=false,i=new Image();setTimeout(function(){if(!d){d=true;cb(false)}},6000);i.onload=function(){if(!d){d=true;cb(true)}};i.onerror=function(){if(!d){d=true;cb(false)}};i.src=u.replace(/\/?$/,'/')+'favicon.ico?p='+Date.now()}
 function checar(){site(function(a){if(!a)return set(false);ws(function(b){set(b)})})}
@@ -40,5 +45,6 @@ function falhou(m){baixando=false;var bt=document.getElementById('bt');bt.textCo
 function jogar(){if(baixando)return;if(on){var bt=document.getElementById('bt');bt.textContent='Verificando versão...';
  if(window.SmashApp&&SmashApp.atualizar){baixando=true;SmashApp.atualizar()}else{location.href=u}}else{checar()}}
 try{if(window.SmashApp)document.getElementById('ver').textContent='v'+SmashApp.versaoApp()}catch(e){}
+try{if(window.SmashApp&&SmashApp.fundoLocal){var fl=SmashApp.fundoLocal();if(fl)fundo(fl)}}catch(e){}
 checar();setInterval(checar,5000);
 </script></body></html>

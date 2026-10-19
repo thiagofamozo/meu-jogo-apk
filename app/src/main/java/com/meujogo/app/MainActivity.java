@@ -121,6 +121,31 @@ public class MainActivity extends Activity {
         });
         tela("inicio");
         hideBars();
+        baixarFundo();
+    }
+
+    // imagem da tela inicial trocada pelo servidor: game\app_fundo.jpg
+    private void baixarFundo() {
+        new Thread(() -> {
+            HttpURLConnection c = null;
+            try {
+                File f = new File(getFilesDir(), "app_fundo.jpg");
+                c = (HttpURLConnection) new URL(home + "app_fundo.jpg").openConnection();
+                c.setConnectTimeout(6000); c.setReadTimeout(20000);
+                if (f.isFile()) c.setIfModifiedSince(f.lastModified());
+                int cod = c.getResponseCode();
+                if (cod == 404) { if (f.delete()) js("fundo('bg.jpg')"); return; }  // tirou a imagem do servidor: volta a padrao
+                if (cod != 200) return;
+                File tmp = new File(getFilesDir(), "app_fundo.tmp");
+                InputStream in = c.getInputStream(); OutputStream out = new FileOutputStream(tmp);
+                byte[] buf = new byte[32768]; int n; while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                out.close(); in.close();
+                long lm = c.getLastModified();
+                f.delete(); tmp.renameTo(f);
+                if (lm > 0) f.setLastModified(lm);
+                js("fundo(" + q("file://" + f.getAbsolutePath() + "?v=" + f.lastModified()) + ")");
+            } catch (Exception e) { } finally { if (c != null) c.disconnect(); }
+        }).start();
     }
 
     // ---------- arquivos guardados no celular ----------
@@ -219,7 +244,7 @@ public class MainActivity extends Activity {
                     }
                     txt = lerTexto(c.getInputStream()); c.disconnect();
                 } catch (Exception e) {
-                    js("falhou(" + q("Sem conexão com o servidor. Tente de novo.") + ")"); return;
+                    js("falhou(" + q("Não foi possível conectar ao servidor. Tente novamente mais tarde.") + ")"); return;
                 }
                 JSONObject arqs = new JSONObject(txt).getJSONObject("arquivos");
                 final List<String> baixar = new ArrayList<>();
@@ -319,6 +344,17 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void atualizar() { MainActivity.this.atualizar(); }
         @JavascriptInterface public String versaoApp() {
             try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { return ""; }
+        }
+        @JavascriptInterface public boolean temInternet() {
+            try {
+                android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+                android.net.NetworkInfo ni = cm.getActiveNetworkInfo();
+                return ni != null && ni.isConnected();
+            } catch (Exception e) { return true; }
+        }
+        @JavascriptInterface public String fundoLocal() {
+            File f = new File(getFilesDir(), "app_fundo.jpg");
+            return f.isFile() ? "file://" + f.getAbsolutePath() + "?v=" + f.lastModified() : "";
         }
         @JavascriptInterface public void limparJogo() {
             locais.clear(); salvarManifestoLocal(); apagar(pasta); pasta.mkdirs();
