@@ -212,8 +212,10 @@ public class MainActivity extends Activity {
                     HttpURLConnection c = (HttpURLConnection) new URL(home + "versao_app.json?t=" + System.currentTimeMillis()).openConnection();
                     c.setConnectTimeout(8000); c.setReadTimeout(20000);
                     if (c.getResponseCode() != 200) {
-                        // servidor antigo sem lista de versao: abre do jeito normal (tudo pela internet)
-                        c.disconnect(); abrirJogo(); return;
+                        // servidor sem a lista de versao: NAO abre (avisa)
+                        int cod = c.getResponseCode(); c.disconnect();
+                        js("falhou(" + q("Servidor desatualizado: não achei a lista de versões do jogo (erro " + cod + "). Atualize o servidor (versao_app.cjs).") + ")");
+                        return;
                     }
                     txt = lerTexto(c.getInputStream()); c.disconnect();
                 } catch (Exception e) {
