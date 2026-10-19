@@ -14,8 +14,11 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0d1b2c;font-family:'A
 .btn{min-width:190px;padding:14px 30px;border:0;background:none;border-image:url(btn.png) 30 45 fill / 30px 45px;font:22px 'Arial Black',Arial;color:#fff8de;text-shadow:0 2px #6a3a00,1.5px 0 #6a3a00,-1.5px 0 #6a3a00,0 -1.5px #6a3a00;transition:transform .1s,filter .2s}
 .btn:active{transform:scale(.95)}
 .btn.dis{filter:grayscale(1) brightness(.85)}
-.aviso{font:12px Arial,sans-serif;font-weight:bold;text-align:center;line-height:1.5;text-shadow:0 1px 2px #000,0 0 3px #000;padding:0 14px}
-.msg{min-height:16px;font:bold 13px Arial,sans-serif;text-shadow:0 1px 3px #000,0 0 4px #000;color:#ffe08a;text-align:center;padding:0 16px}
+.aviso{font:bold 12px Arial,sans-serif;text-align:center;line-height:1.5;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 0 4px #000;padding:0 14px}
+.msg{max-width:88vw;padding:9px 16px;border-radius:12px;background:rgba(10,14,28,.9);border:2px solid #ffd25a;font:bold 14px Arial,sans-serif;line-height:1.4;color:#fff;text-align:center;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;box-shadow:0 3px 10px rgba(0,0,0,.6)}
+.msg:empty{display:none}
+.msg.erro{border-color:#ff5045;color:#ffe3e0}
+.msg.erro::before{content:'⚠ ';color:#ffcc33}
 </style></head><body><div class="bg"></div><div class="ver" id="ver">v2.0</div>
 <div class="ui">
  <div class="bar chk" id="sv"><span id="nm">Servidor</span><span class="st"><span class="dot"></span><span class="tx" id="tx">Verificando...</span></span></div>
@@ -31,17 +34,17 @@ function set(ok){on=ok;var semNet=!ok&&!net();
  document.getElementById('tx').textContent=ok?'ONLINE':(semNet?'SEM INTERNET':'OFFLINE');
  if(baixando)return;
  document.getElementById('bt').className='btn'+(ok?'':' dis');
- document.getElementById('msg').textContent=ok?'':(semNet?'Sem conexão com a internet. Verifique seu Wi-Fi ou dados móveis e tente novamente.':'Servidor em manutenção. Tente novamente mais tarde.')}
+ var mg=document.getElementById('msg');mg.className='msg'+(ok?'':' erro');mg.textContent=ok?'':(semNet?'Sem conexão com a internet. Verifique seu Wi-Fi ou dados móveis e tente novamente.':'Servidor em manutenção. Tente novamente mais tarde.')}
 function fundo(f){try{document.querySelector('.bg').style.backgroundImage='url("'+f+'"),url(bg.jpg)'}catch(e){}}
 function ws(cb){var d=false,w;function f(k){if(d)return;d=true;try{w.close()}catch(e){}cb(k)}try{w=new WebSocket('ws://'+host+':3020')}catch(e){return cb(false)}setTimeout(function(){f(false)},6000);w.onopen=function(){f(true)};w.onerror=function(){f(false)}}
 function site(cb){var d=false,i=new Image();setTimeout(function(){if(!d){d=true;cb(false)}},6000);i.onload=function(){if(!d){d=true;cb(true)}};i.onerror=function(){if(!d){d=true;cb(false)}};i.src=u.replace(/\/?$/,'/')+'favicon.ico?p='+Date.now()}
 function checar(){site(function(a){if(!a)return set(false);ws(function(b){set(b)})})}
 var baixando=false;
 function mb(b){return (b/1048576).toFixed(b<10485760?1:0)+' MB'}
-function progresso(n,t,b,tb,pri){baixando=true;var bt=document.getElementById('bt');bt.className='btn dis';
+function progresso(n,t,b,tb,pri){baixando=true;document.getElementById('msg').className='msg';var bt=document.getElementById('bt');bt.className='btn dis';
  var pc=tb>0?Math.floor(b*100/tb):Math.floor(n*100/Math.max(t,1));bt.textContent=(pri?'Baixando jogo ':'Atualizando ')+pc+'%';
  document.getElementById('msg').textContent=mb(b)+' de '+mb(tb)+' ('+n+'/'+t+' arquivos)'+(pri?' - só na 1ª vez':'')}
-function falhou(m){baixando=false;var bt=document.getElementById('bt');bt.textContent='Iniciar jogo';bt.className='btn'+(on?'':' dis');document.getElementById('msg').textContent=m}
+function falhou(m){baixando=false;document.getElementById('msg').className='msg erro';var bt=document.getElementById('bt');bt.textContent='Iniciar jogo';bt.className='btn'+(on?'':' dis');document.getElementById('msg').textContent=m}
 function jogar(){if(baixando)return;if(on){var bt=document.getElementById('bt');bt.textContent='Verificando versão...';
  if(window.SmashApp&&SmashApp.atualizar){baixando=true;SmashApp.atualizar()}else{location.href=u}}else{checar()}}
 try{if(window.SmashApp)document.getElementById('ver').textContent='v'+SmashApp.versaoApp()}catch(e){}
