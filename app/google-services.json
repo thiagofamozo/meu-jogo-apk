@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "346911556680",
+    "project_id": "smash-world-go",
+    "storage_bucket": "smash-world-go.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:346911556680:android:930191d56b8b0eb123847d",
+        "android_client_info": {
+          "package_name": "com.meujogo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKAOI7aZtzeypYZ7pQuBS8u1p-HMIdUMs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

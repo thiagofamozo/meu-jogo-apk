@@ -139,8 +139,24 @@ public class MainActivity extends Activity {
         configurarAnuncios();
         try { Notificacoes.criarCanal(this); } catch (Exception e) { }
         if (Build.VERSION.SDK_INT >= 33) { try { requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 7); } catch (Exception e) { } }
-        try { if (!com.google.firebase.FirebaseApp.getApps(this).isEmpty()) com.google.firebase.messaging.FirebaseMessaging.getInstance().subscribeToTopic("todos"); } catch (Throwable e) { }
+        // notificacoes: pega o codigo deste celular (o jogo manda para o servidor junto com o jogador)
+        try {
+            if (!com.google.firebase.FirebaseApp.getApps(this).isEmpty()) {
+                com.google.firebase.messaging.FirebaseMessaging fm = com.google.firebase.messaging.FirebaseMessaging.getInstance();
+                fm.subscribeToTopic("todos");
+                fm.getToken().addOnCompleteListener(t -> { try { if (t.isSuccessful()) Notificacoes.guardarToken(this, t.getResult()); } catch (Throwable e) { } });
+            }
+        } catch (Throwable e) { }
+        notifClicada(getIntent());
         web.postDelayed(relogioAd, 30000);
+    }
+
+    @Override
+    protected void onNewIntent(Intent i) { super.onNewIntent(i); setIntent(i); notifClicada(i); }
+
+    // a pessoa abriu o jogo tocando numa notificacao: conta como "clicada" no painel
+    private void notifClicada(Intent i) {
+        try { String id = i == null ? null : i.getStringExtra("notif_id"); if (id != null) { i.removeExtra("notif_id"); Notificacoes.avisar(this, id, "clicado"); } } catch (Throwable e) { }
     }
 
     private void baixarVersao() {
@@ -457,6 +473,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void abrirPagamento(String url) { runOnUiThread(() -> MainActivity.this.abrirPagamento(url)); }
         @JavascriptInterface public void fecharPagamento() { runOnUiThread(() -> MainActivity.this.fecharPagamento()); }
         @JavascriptInterface public void atualizar() { MainActivity.this.atualizar(); }
+        @JavascriptInterface public String fcmToken() { return Notificacoes.token(MainActivity.this); }
         @JavascriptInterface public void entrar() { entrarNoJogo(); }
         @JavascriptInterface public boolean anuncioPronto() { if (!adCarregado) runOnUiThread(() -> carregarAnuncio()); return adLigado && adIniciado && adCarregado; }
         @JavascriptInterface public String anuncioMotivo() { return adMotivo; }
