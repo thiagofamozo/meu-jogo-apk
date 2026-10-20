@@ -65,7 +65,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class MainActivity extends Activity {
     private WebView web;
-    private String home;          // ex.: http://104.234.63.109:8080/
+    private String home;          // ex.: http://smashworldgo.duckdns.org:8080/ (nome do DuckDNS: trocar de VPS = so mudar o IP no duckdns.org)
     private String homeHost;
     private int homePort;
     private File pasta;           // onde o jogo fica guardado no celular

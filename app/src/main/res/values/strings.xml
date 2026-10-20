@@ -3,5 +3,5 @@
     <!-- Nome que aparece embaixo do icone -->
     <string name="app_name">Smash World GO</string>
     <!-- Endereco do jogo (troque pelo IP ou dominio da VPS) -->
-    <string name="game_url">http://104.234.63.109:8080/</string>
+    <string name="game_url">http://smashworldgo.duckdns.org:8080/</string>
 </resources>
