@@ -87,6 +87,7 @@ public class MainActivity extends Activity {
         pasta.mkdirs();
         manifestoArq = new File(getFilesDir(), "jogo_manifesto.json");
         lerManifestoLocal();
+        lerManifestoApk();
 
         web = new WebView(this);
         web.setBackgroundColor(Color.parseColor("#0d1b2c"));
@@ -136,6 +137,9 @@ public class MainActivity extends Activity {
         baixarFundo();
         baixarVersao();
         configurarAnuncios();
+        try { Notificacoes.criarCanal(this); } catch (Exception e) { }
+        if (Build.VERSION.SDK_INT >= 33) { try { requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 7); } catch (Exception e) { } }
+        try { if (!com.google.firebase.FirebaseApp.getApps(this).isEmpty()) com.google.firebase.messaging.FirebaseMessaging.getInstance().subscribeToTopic("todos"); } catch (Throwable e) { }
         web.postDelayed(relogioAd, 30000);
     }
 
@@ -231,6 +235,32 @@ public class MainActivity extends Activity {
         }
     }
 
+    // jogo que ja vem dentro do APK (assets/jogo): arquivo -> assinatura
+    private final Map<String, String> doApk = new HashMap<>();
+    private void lerManifestoApk() {
+        try {
+            JSONObject o = new JSONObject(lerTexto(getAssets().open("jogo_manifesto.json"))).getJSONObject("arquivos");
+            Iterator<String> it = o.keys();
+            while (it.hasNext()) { String k = it.next(); doApk.put(k, o.getJSONArray(k).getString(1)); }
+        } catch (Exception e) { }
+    }
+    /** copia do proprio APK quando o arquivo do servidor e o mesmo (nao gasta internet) */
+    private boolean copiarDoApk(String rel, String assin, AtomicLong feitosB) {
+        if (assin == null || !assin.equals(doApk.get(rel))) return false;
+        try {
+            File destino = new File(pasta, rel);
+            destino.getParentFile().mkdirs();
+            File tmp = new File(destino.getPath() + ".copiando");
+            InputStream in = getAssets().open("jogo/" + rel);
+            OutputStream out = new FileOutputStream(tmp);
+            byte[] buf = new byte[65536]; int n;
+            while ((n = in.read(buf)) > 0) { out.write(buf, 0, n); feitosB.addAndGet(n); }
+            out.close(); in.close();
+            if (destino.exists()) destino.delete();
+            return tmp.renameTo(destino);
+        } catch (Exception e) { return false; }
+    }
+
     private void lerManifestoLocal() {
         try {
             if (!manifestoArq.isFile()) return;
@@ -306,6 +336,7 @@ public class MainActivity extends Activity {
                 for (final String k : baixar) {
                     pool.execute(() -> {
                         boolean ok = false;
+                        ok = copiarDoApk(k, novos.get(k), feitosB);
                         for (int t = 0; t < 3 && !ok; t++) ok = baixarArquivo(k, feitosB);
                         if (ok) locais.put(k, novos.get(k)); else erros.incrementAndGet();
                         int n = feitos.incrementAndGet();

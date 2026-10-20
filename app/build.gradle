@@ -1,4 +1,6 @@
 plugins { id 'com.android.application' }
+// Firebase (notificacoes): so liga quando o arquivo app/google-services.json existir
+if (file('google-services.json').exists()) { apply plugin: 'com.google.gms.google-services' }
 // Chave: se o GitHub tiver os segredos APK_KEYSTORE/APK_SENHA (chave oficial, para a Aptoide), usa ela.
 // Senao usa a chave de TESTE que fica no repositorio (so para testar no celular).
 def ksOficial = System.getenv('APK_KEYSTORE_ARQ')
@@ -23,9 +25,12 @@ android {
             }
         }
     }
+    aaptOptions { ignoreAssetsPattern '!.svn:!.git:!.ds_store:!thumbs.db' }
     buildTypes { release { minifyEnabled false; signingConfig signingConfigs.assinatura } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 dependencies {
     implementation 'com.unity3d.ads:unity-ads:4.12.0'
+    implementation platform('com.google.firebase:firebase-bom:33.5.1')
+    implementation 'com.google.firebase:firebase-messaging'
 }

@@ -21,6 +21,21 @@ jobs:
           K: ${{ secrets.APK_KEYSTORE }}
         run: |
           if [ -n "$K" ]; then echo "$K" | base64 -d > $RUNNER_TEMP/smash.keystore; echo "APK_KEYSTORE_ARQ=$RUNNER_TEMP/smash.keystore" >> $GITHUB_ENV; fi
+      - name: Colocar o jogo dentro do APK (baixa da VPS)
+        run: |
+          set -e
+          URL=http://smashworldgo.duckdns.org:8080
+          D=app/src/main/assets/jogo; mkdir -p $D
+          curl -fsS --retry 3 "$URL/versao_app.json" -o app/src/main/assets/jogo_manifesto.json
+          python3 - <<'PY'
+          import json, urllib.parse
+          a = json.load(open('app/src/main/assets/jogo_manifesto.json'))['arquivos']
+          with open('lista.txt', 'w') as f:
+              for k in a: f.write(k + '\n')
+          print(len(a), 'arquivos', sum(v[0] for v in a.values()) // 1048576, 'MB')
+          PY
+          cat lista.txt | xargs -P 12 -I{} sh -c 'mkdir -p "$(dirname "app/src/main/assets/jogo/{}")"; curl -fsS --retry 3 -H "Accept-Encoding: identity" "'$URL'/$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "{}")" -o "app/src/main/assets/jogo/{}"'
+          du -sh $D
       - name: Montar APK
         env:
           APK_SENHA: ${{ secrets.APK_SENHA }}
@@ -34,7 +49,8 @@ jobs:
       - name: Publicar para baixar no celular
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: apk-${{ github.run_number }}
+          tag_name: apk-${{ github.run_number }}${{ github.ref_name != 'main' && '-teste' || '' }}
           name: Smash World GO (versao ${{ github.run_number }})
-          make_latest: true
+          make_latest: ${{ github.ref_name == 'main' }}
+          prerelease: ${{ github.ref_name != 'main' }}
           files: SmashWorldGO.apk
