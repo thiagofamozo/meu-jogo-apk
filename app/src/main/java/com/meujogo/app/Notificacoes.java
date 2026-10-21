@@ -92,12 +92,13 @@ public class Notificacoes extends FirebaseMessagingService {
         }
     }
 
-    private static Bitmap baixarImagem(String endereco, int limite) {
+    private Bitmap baixarImagem(String endereco, int limite) {
         if (endereco == null || endereco.isEmpty()) return null;
         HttpURLConnection h = null;
         try {
-            URL u = new URL(endereco);
-            if (!"https".equalsIgnoreCase(u.getProtocol()) || u.getUserInfo() != null) return null;
+            boolean local = endereco.matches("/notif-media/[a-f0-9]{64}\\.(png|jpg)");
+            URL u = local ? new URL(new URL(getString(R.string.game_url)), endereco) : new URL(endereco);
+            if ((!"https".equalsIgnoreCase(u.getProtocol()) && !(local && "http".equalsIgnoreCase(u.getProtocol()))) || u.getUserInfo() != null) return null;
             h = (HttpURLConnection) u.openConnection();
             h.setInstanceFollowRedirects(false);
             h.setConnectTimeout(2500); h.setReadTimeout(2500);
