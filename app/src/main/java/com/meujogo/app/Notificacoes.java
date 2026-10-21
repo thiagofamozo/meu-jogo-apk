@@ -74,7 +74,7 @@ public class Notificacoes extends FirebaseMessagingService {
         PendingIntent pi = PendingIntent.getActivity(this, nid, i, PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));
         android.app.Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new android.app.Notification.Builder(this, "avisos") : new android.app.Notification.Builder(this);
         String tx = texto == null ? "" : texto;
-        b.setSmallIcon(R.drawable.ic_notificacao).setContentTitle(titulo == null ? "Smash World GO" : titulo).setContentText(tx)
+        b.setSmallIcon(R.drawable.logo_notificacao).setContentTitle(titulo == null ? "Smash World GO" : titulo).setContentText(tx)
                 .setStyle(new android.app.Notification.BigTextStyle().bigText(tx)) // texto inteiro, sem cortar
                 .setAutoCancel(true).setContentIntent(pi);
         if (Build.VERSION.SDK_INT < 26) b.setPriority(android.app.Notification.PRIORITY_HIGH);
