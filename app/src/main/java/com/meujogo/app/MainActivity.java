@@ -6,6 +6,7 @@ import android.app.Dialog;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.content.Intent;
@@ -29,6 +30,8 @@ import com.unity3d.ads.IUnityAdsLoadListener;
 import com.unity3d.ads.IUnityAdsShowListener;
 import com.unity3d.ads.UnityAds;
 import com.unity3d.ads.UnityAdsShowOptions;
+import com.unity3d.services.banners.BannerView;
+import com.unity3d.services.banners.UnityBannerSize;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -65,6 +68,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class MainActivity extends Activity {
     private WebView web;
+    private FrameLayout raiz;     // WebView + banner por cima (embaixo)
     private String home;          // ex.: http://smashworldgo.duckdns.org:8080/ (nome do DuckDNS: trocar de VPS = so mudar o IP no duckdns.org)
     private String homeHost;
     private int homePort;
@@ -78,7 +82,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle b) {
         super.onCreate(b);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        home = getString(R.string.game_url);
+        home = Segredo.endereco(getString(R.string.game_url));
         if (!home.endsWith("/")) home += "/";
         Uri hu = Uri.parse(home);
         homeHost = hu.getHost();
@@ -91,7 +95,9 @@ public class MainActivity extends Activity {
 
         web = new WebView(this);
         web.setBackgroundColor(Color.parseColor("#0d1b2c"));
-        setContentView(web);
+        raiz = new FrameLayout(this);
+        raiz.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        setContentView(raiz);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
@@ -479,6 +485,12 @@ public class MainActivity extends Activity {
         @JavascriptInterface public String anuncioMotivo() { return adMotivo; }
         @JavascriptInterface public void mostrarAnuncio(String id) { MainActivity.this.mostrarAnuncio(id); }
         @JavascriptInterface public boolean anuncioTeste() { return adTeste; }
+        // banner (embaixo da tela) e tela cheia (intersticial) pedidos pelo jogo
+        @JavascriptInterface public void mostrarBanner(String placement) { MainActivity.this.mostrarBanner(placement); }
+        @JavascriptInterface public void esconderBanner() { MainActivity.this.esconderBanner(); }
+        @JavascriptInterface public boolean intersticialPronto() { if (!isCarregado) runOnUiThread(() -> carregarIntersticial()); return adLigado && adIniciado && isCarregado; }
+        @JavascriptInterface public void mostrarIntersticial(String id) { MainActivity.this.mostrarIntersticial(() -> fimAnuncio(id, true, "")); }
+        @JavascriptInterface public String tiposAnuncio() { return "recompensa,intersticial,banner"; }
         // versao mostrada na tela: vem do servidor (game\\versao_jogo.txt); padrao 1.2.7
         @JavascriptInterface public String versaoApp() {
             return getSharedPreferences("app", MODE_PRIVATE).getString("versao_jogo", "1.2.7");
@@ -530,6 +542,9 @@ public class MainActivity extends Activity {
                 if (!pl.isEmpty()) adPlacement = pl;
                 String ip = o.optString("intersticial", "").trim();
                 if (!ip.isEmpty()) isPlacement = ip;
+                String bp = o.optString("banner", "").trim();
+                if (!bp.isEmpty()) bnPlacement = bp;
+                bnLigado = o.optBoolean("bannerLigado", false);
                 isAbrirCada = Math.max(0, o.optInt("abrirCada", 0));
                 isMinutos = Math.max(0, o.optInt("minutosJogo", 0));
                 if (!adLigado) { adMotivo = "Anúncios desligados no momento."; return; }
@@ -556,7 +571,7 @@ public class MainActivity extends Activity {
     }
 
     private void carregarIntersticial() {
-        if (!adIniciado || isCarregando || isCarregado || (isAbrirCada == 0 && isMinutos == 0)) return;
+        if (!adIniciado || isCarregando || isCarregado) return;
         isCarregando = true;
         UnityAds.load(isPlacement, new IUnityAdsLoadListener() {
             @Override public void onUnityAdsAdLoaded(String p) { isCarregando = false; isCarregado = true; }
@@ -570,7 +585,7 @@ public class MainActivity extends Activity {
     private void mostrarIntersticial(final Runnable depois) {
         runOnUiThread(() -> {
             if (!adLigado || !adIniciado || !isCarregado || mostrandoAd) { if (depois != null) depois.run(); carregarIntersticial(); return; }
-            isCarregado = false; mostrandoAd = true;
+            isCarregado = false; mostrandoAd = true; esconderBanner();
             UnityAds.show(MainActivity.this, isPlacement, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
                 void fim() { mostrandoAd = false; ultimoAd = System.currentTimeMillis(); hideBars(); carregarIntersticial(); if (depois != null) depois.run(); }
                 @Override public void onUnityAdsShowFailure(String p, UnityAds.UnityAdsShowError e, String m) { fim(); }
@@ -601,7 +616,7 @@ public class MainActivity extends Activity {
     private void mostrarAnuncio(final String id) {
         runOnUiThread(() -> {
             if (!adLigado || !adIniciado || !adCarregado) { fimAnuncio(id, false, adMotivo); carregarAnuncio(); return; }
-            adCarregado = false; mostrandoAd = true;
+            adCarregado = false; mostrandoAd = true; esconderBanner();
             UnityAds.show(MainActivity.this, adPlacement, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
                 @Override public void onUnityAdsShowFailure(String p, UnityAds.UnityAdsShowError e, String m) { mostrandoAd = false; fimAnuncio(id, false, "Falha ao mostrar o anúncio. Tente de novo."); carregarAnuncio(); }
                 @Override public void onUnityAdsShowStart(String p) { }
@@ -620,8 +635,33 @@ public class MainActivity extends Activity {
         js("window._smashAdFim&&window._smashAdFim(" + q(id) + "," + ok + "," + q(msg) + ")");
     }
 
-    // ---------- telas ----------
+    // ---------- Banner (embaixo da tela, so nos combates: o jogo pede e esconde) ----------
+    private volatile String bnPlacement = "Banner_Android";
+    private volatile boolean bnLigado = false;
+    private BannerView banner = null;
+    private String bannerAtual = null;
 
+    private void mostrarBanner(final String placement) {
+        runOnUiThread(() -> {
+            try {
+                if (!adLigado || !adIniciado || !bnLigado || mostrandoAd) return;
+                String pl = (placement == null || placement.trim().isEmpty()) ? bnPlacement : placement.trim();
+                if (banner != null && pl.equals(bannerAtual)) { banner.setVisibility(View.VISIBLE); return; }
+                if (banner != null) { try { raiz.removeView(banner); banner.destroy(); } catch (Exception e) { } banner = null; }
+                banner = new BannerView(MainActivity.this, pl, new UnityBannerSize(320, 50));
+                bannerAtual = pl;
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+                raiz.addView(banner, lp);
+                banner.load();
+            } catch (Exception e) { }
+        });
+    }
+
+    private void esconderBanner() {
+        runOnUiThread(() -> { try { if (banner != null) banner.setVisibility(View.GONE); } catch (Exception e) { } });
+    }
+
+    // ---------- telas ----------
     private void tela(String modo) {
         String html = "<html><body style='background:#0d1b2c'></body></html>";
         try {
