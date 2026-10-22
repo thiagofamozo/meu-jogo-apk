@@ -45,7 +45,7 @@ public class Notificacoes extends FirebaseMessagingService {
     static void avisar(Context c, String id, String ev) {
         final String tk = token(c);
         if (id == null || !id.matches("\\d{1,12}") || tk.isEmpty()) return;
-        String base = c.getString(R.string.game_url);
+        String base = Segredo.endereco(c.getString(R.string.game_url));
         if (!base.endsWith("/")) base += "/";
         final String url = base + "api/notif/ev";
         final String corpo = "{\"token\":\"" + tk.replace("\"", "") + "\",\"id\":" + id + ",\"ev\":\"" + ev + "\"}";
@@ -97,7 +97,7 @@ public class Notificacoes extends FirebaseMessagingService {
         HttpURLConnection h = null;
         try {
             boolean local = endereco.matches("/notif-media/[a-f0-9]{64}\\.(png|jpg)");
-            URL u = local ? new URL(new URL(getString(R.string.game_url)), endereco) : new URL(endereco);
+            URL u = local ? new URL(new URL(Segredo.endereco(getString(R.string.game_url))), endereco) : new URL(endereco);
             if ((!"https".equalsIgnoreCase(u.getProtocol()) && !(local && "http".equalsIgnoreCase(u.getProtocol()))) || u.getUserInfo() != null) return null;
             h = (HttpURLConnection) u.openConnection();
             h.setInstanceFollowRedirects(false);
