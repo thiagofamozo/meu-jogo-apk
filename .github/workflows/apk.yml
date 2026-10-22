@@ -22,9 +22,14 @@ jobs:
         run: |
           if [ -n "$K" ]; then echo "$K" | base64 -d > $RUNNER_TEMP/smash.keystore; echo "APK_KEYSTORE_ARQ=$RUNNER_TEMP/smash.keystore" >> $GITHUB_ENV; fi
       - name: Colocar o jogo dentro do APK (baixa da VPS)
+        env:
+          GAME_URL: ${{ secrets.GAME_URL }}
         run: |
           set -e
-          URL=http://smashworldgo.duckdns.org:8080
+          # endereco: segredo GAME_URL do GitHub; sem ele, desembaralha o game_url do strings.xml (mesma chave do Segredo.java)
+          URL="$GAME_URL"
+          if [ -z "$URL" ]; then URL=$(python3 -c "import re,base64;s=open('app/src/main/res/values/strings.xml',encoding='utf-8').read();g=re.search(r'name=.game_url.>([^<]+)<',s).group(1).strip();K=[0x53,0x6d,0x57,0x21,0x67,0x30,0x23,0x6b,0x39,0x14,0x7e,0x2c];b=g if g.startswith('http') else bytes((c^K[i%12]^(i*7))&255 for i,c in enumerate(base64.b64decode(g))).decode();print(b.rstrip('/'))"); fi
+          echo "::add-mask::$URL"
           D=app/src/main/assets/jogo; mkdir -p $D
           curl -fsS --retry 3 "$URL/versao_app.json" -o app/src/main/assets/jogo_manifesto.json
           python3 - <<'PY'
