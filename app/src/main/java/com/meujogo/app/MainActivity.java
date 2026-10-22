@@ -640,16 +640,25 @@ public class MainActivity extends Activity {
     private volatile boolean bnLigado = false;
     private BannerView banner = null;
     private String bannerAtual = null;
+    private volatile long bnFalhaEm = 0;
 
     private void mostrarBanner(final String placement) {
         runOnUiThread(() -> {
             try {
-                if (!adLigado || !adIniciado || !bnLigado || mostrandoAd) return;
+                if (!adLigado || !adIniciado || !bnLigado || mostrandoAd) { js("window._smashBanner&&window._smashBanner('espera'," + q("ligado=" + adLigado + " iniciado=" + adIniciado + " banner=" + bnLigado + " | " + adMotivo) + ")"); return; }
                 String pl = (placement == null || placement.trim().isEmpty()) ? bnPlacement : placement.trim();
-                if (banner != null && pl.equals(bannerAtual)) { banner.setVisibility(View.VISIBLE); return; }
+                if (banner != null && pl.equals(bannerAtual) && bnFalhaEm == 0) { banner.setVisibility(View.VISIBLE); return; }
+                if (banner != null && pl.equals(bannerAtual) && System.currentTimeMillis() - bnFalhaEm < 30000) return; // falhou: tenta de novo a cada 30 s
                 if (banner != null) { try { raiz.removeView(banner); banner.destroy(); } catch (Exception e) { } banner = null; }
                 banner = new BannerView(MainActivity.this, pl, new UnityBannerSize(320, 50));
-                bannerAtual = pl;
+                bannerAtual = pl; bnFalhaEm = 0;
+                banner.setListener(new BannerView.IListener() {
+                    public void onBannerLoaded(BannerView v) { bnFalhaEm = 0; js("window._smashBanner&&window._smashBanner('ok','')"); }
+                    public void onBannerShown(BannerView v) { }
+                    public void onBannerClick(BannerView v) { }
+                    public void onBannerFailedToLoad(BannerView v, com.unity3d.services.banners.BannerErrorInfo e) { bnFalhaEm = System.currentTimeMillis(); js("window._smashBanner&&window._smashBanner('erro'," + q(e == null ? "" : e.errorCode + " - " + e.errorMessage) + ")"); }
+                    public void onBannerLeftApplication(BannerView v) { }
+                });
                 FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
                 raiz.addView(banner, lp);
                 banner.load();
